@@ -1,4 +1,5 @@
 using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using Autofac.Multitenant;
 using Microsoft.Extensions.Primitives;
 
@@ -15,14 +16,22 @@ public static class MultitenantContainerSetup
         // Create the multitenant container.
         var multitenantContainer = new MultitenantContainer(strategy, container);
 
+        // create endpoint per tenant
+        var services = new ServiceCollection();
+        services.AddTransient<IConfigureEndpoints, ConfigureEndpoints>();
+        
         // Register tenant overrides.
         multitenantContainer.ConfigureTenant(
             "Alex",
-            cb => cb
-                .RegisterType<OverriddenDependency>()
-                .As<IDependency>()
-                .WithProperty("Id", "Alex")
-                .InstancePerLifetimeScope());
+            cb =>
+            {
+                cb
+                    .RegisterType<OverriddenDependency>()
+                    .As<IDependency>()
+                    .WithProperty("Id", "Alex")
+                    .InstancePerLifetimeScope();
+                cb.Populate(services);
+            });
 
         // Return the built container for use in the app.
         return multitenantContainer;
@@ -90,4 +99,17 @@ public class CurrentTenant : ICurrentTenant
 public interface ICurrentTenant
 {
     object TenantId { get; set; }
+}
+
+public interface IConfigureEndpoints
+{
+    void Configure(IEndpointRouteBuilder endpoints, IServiceProvider serviceProvider);
+}
+
+public class ConfigureEndpoints : IConfigureEndpoints
+{
+    public void Configure(IEndpointRouteBuilder endpoints, IServiceProvider serviceProvider)
+    {
+        endpoints.MapGet("/api/hello", (IDependency d) => $"Dynamic world! {d.Postfix()}");
+    }
 }
