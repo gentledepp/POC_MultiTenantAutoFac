@@ -5,6 +5,10 @@ public interface IDependency
 
 public class CommonDependency : IDependency
 {
+    public CommonDependency()
+    {
+        
+    }
     public string Postfix()
     {
         return "[]";

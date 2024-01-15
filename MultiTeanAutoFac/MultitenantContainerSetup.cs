@@ -1,5 +1,6 @@
 using Autofac;
 using Autofac.Multitenant;
+using Microsoft.Extensions.Primitives;
 
 public static class MultitenantContainerSetup
 {
@@ -30,6 +31,11 @@ public static class MultitenantContainerSetup
 
 public class OverriddenDependency : IDependency
 {
+    public OverriddenDependency()
+    {
+        
+    }
+    
     public string Postfix()
     {
         return "[tenant container]";
@@ -53,7 +59,7 @@ public class QueryStringTenantIdentificationStrategy : ITenantIdentificationStra
     {
         if (_contextAccessor.HttpContext is { } ctx)
         {
-            tenantId = ctx.Request.Query.TryGetValue("tenantId", out var tid) ? tid : "host";
+            tenantId = ctx.Request.Query.TryGetValue("tenantId", out var tid) ? tid.ToString() : null;
             _currentTenant.TenantId = tenantId;
         }
         else
